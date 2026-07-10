@@ -2334,7 +2334,7 @@ export default function AllDocTable() {
                                   View
                                 </Dropdown.Item>
                               )}
-                              {item.type === "pdf" && hasPermission(permissions, "All Documents", "Redact Document") && (
+                              {/* {item.type === "pdf" && hasPermission(permissions, "All Documents", "Redact Document") && (
                                                             <Dropdown.Item
                                                               onClick={() =>
                                                                 handleOpenModal("redactDocumentModel", item.id, item.name)
@@ -2344,7 +2344,7 @@ export default function AllDocTable() {
                                                               <MdModeEditOutline className="me-2" />
                                                               Redact Document
                                                             </Dropdown.Item>
-                                                          )}
+                                                          )} */}
                             {hasPermission(
                               permissions,
                               "All Documents",
