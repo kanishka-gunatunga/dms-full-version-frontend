@@ -93,7 +93,7 @@ import { useChat } from "@/context/ChatContext";
 import { PiStarFourThin } from "react-icons/pi";
 import styles from "./all-documents.module.css";
 import { getFlattenedCategories } from "@/utils/commonFunctions";
-import RedactDocumentModal from "@/components/RedactDocumentModal";
+const RedactDocumentModal = dynamic(() => import("@/components/RedactDocumentModal"), { ssr: false });
 
 interface Category {
   category_name: string;
@@ -145,7 +145,7 @@ interface ViewDocumentItem {
   type: string;
   url: string;
   enable_external_file_view: number
-  is_redacted?: number;;
+  is_redacted?: number;
 }
 
 interface CategoryDropdownItem {
@@ -2334,6 +2334,17 @@ export default function AllDocTable() {
                                   View
                                 </Dropdown.Item>
                               )}
+                              {item.type === "pdf" && hasPermission(permissions, "All Documents", "Redact Document") && (
+                                                            <Dropdown.Item
+                                                              onClick={() =>
+                                                                handleOpenModal("redactDocumentModel", item.id, item.name)
+                                                              }
+                                                              className="py-2"
+                                                            >
+                                                              <MdModeEditOutline className="me-2" />
+                                                              Redact Document
+                                                            </Dropdown.Item>
+                                                          )}
                             {hasPermission(
                               permissions,
                               "All Documents",
@@ -6521,10 +6532,10 @@ export default function AllDocTable() {
 
             <div className="d-flex flex-wrap gap-3 py-3">
 
-              {viewDocument?.is_redacted === 1 && (
+              {/* {viewDocument?.is_redacted === 1 && (
                 <button
                   onClick={async () => {
-                    const res = await postWithAuth(`undo-redact-document/${viewDocument.id}`, {});
+                    const res = await postWithAuth(`undo-redact-document/${viewDocument.id}`, new FormData());
                     if(res.status === "success") {
                        handleCloseModal("viewModel");
                        fetchDocumentsData(setDummyData);
@@ -6537,17 +6548,17 @@ export default function AllDocTable() {
               )}
 
               
-                            {item.type === "pdf" && hasPermission(permissions, "All Documents", "Edit Document") && (
-                              <Dropdown.Item
+                            {viewDocument?.type === "pdf" && hasPermission(permissions, "All Documents", "Redact Document") && (
+                              <button
                                 onClick={() =>
-                                  handleOpenModal("redactDocumentModel", item.id, item.name)
+                                  handleOpenModal("redactDocumentModel", viewDocument.id, viewDocument.name)
                                 }
-                                className="py-2"
+                                className="addButton me-2 bg-white text-dark border border-success rounded px-3 py-1"
                               >
                                 <MdModeEditOutline className="me-2" />
                                 Redact Document
-                              </Dropdown.Item>
-                            )}
+                              </button>
+                            )} */}
 {hasPermission(permissions, "All Documents", "Edit Document") && (
                 <button
                   onClick={() =>

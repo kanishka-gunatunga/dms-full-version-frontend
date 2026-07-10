@@ -90,7 +90,7 @@ import { hasPermission } from "@/utils/permission";
 import Image from "next/image";
 import styles from "./assigned-documents.module.css";
 import { getFlattenedCategories } from "@/utils/commonFunctions";
-import RedactDocumentModal from "@/components/RedactDocumentModal";
+const RedactDocumentModal = dynamic(() => import("@/components/RedactDocumentModal"), { ssr: false });
 
 interface Category {
   category_name: string;
@@ -2298,7 +2298,7 @@ export default function AllDocTable() {
                             )}
 
                             
-                            {item.type === "pdf" && hasPermission(permissions, "Assigned Documents", "Edit Document") && (
+                            {item.type === "pdf" && hasPermission(permissions, "Assigned Documents", "Redact Document") && (
                               <Dropdown.Item
                                 onClick={() =>
                                   handleOpenModal("redactDocumentModel", item.id, item.name)
@@ -6471,10 +6471,23 @@ export default function AllDocTable() {
               {viewDocument?.is_redacted === 1 && (
                 <button
                   onClick={async () => {
-                    const res = await postWithAuth(`undo-redact-document/${viewDocument.id}`, {});
-                    if(res.status === "success") {
-                       handleCloseModal("viewModel");
-                       fetchAssignedDocumentsData(setDummyData);
+                    try {
+                      const res = await postWithAuth(`undo-redact-document/${viewDocument.id}`, new FormData());
+                      if(res && res.status === "success") {
+                         handleCloseModal("viewModel");
+                         fetchAssignedDocumentsData(setDummyData);
+                         setToastMessage(res.message || "Redaction undone successfully");
+                         setToastType("success");
+                         setShowToast(true);
+                      } else if (res && res.status === "fail") {
+                         setToastMessage(res.message || "Failed to undo redaction");
+                         setToastType("error");
+                         setShowToast(true);
+                      }
+                    } catch (error: any) {
+                      setToastMessage(error.response?.data?.message || "Error undoing redaction");
+                      setToastType("error");
+                      setShowToast(true);
                     }
                   }}
                   className="addButton me-2 bg-white text-dark border border-danger rounded px-3 py-1"
@@ -6484,16 +6497,16 @@ export default function AllDocTable() {
               )}
 
               
-                            {item.type === "pdf" && hasPermission(permissions, "Assigned Documents", "Edit Document") && (
-                              <Dropdown.Item
+                            {viewDocument?.type === "pdf" && hasPermission(permissions, "Assigned Documents", "Redact Document") && (
+                              <button
                                 onClick={() =>
-                                  handleOpenModal("redactDocumentModel", item.id, item.name)
+                                  handleOpenModal("redactDocumentModel", viewDocument.id, viewDocument.name)
                                 }
-                                className="py-2"
+                                className="addButton me-2 bg-white text-dark border border-success rounded px-3 py-1"
                               >
                                 <MdModeEditOutline className="me-2" />
                                 Redact Document
-                              </Dropdown.Item>
+                              </button>
                             )}
 {hasPermission(permissions, "Assigned Documents", "Edit Document") && (
                 <button

@@ -1,11 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['react-pdf', 'pdfjs-dist'],
+  swcMinify: false,
+
   images: {
     domains: [
       'localhost',
       '127.0.0.1'
     ],
     unoptimized: true,
+  },
+
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+
+    config.module.rules.push({
+      test: /pdfjs-dist[\\/].*\.mjs$/,
+      type: 'javascript/auto',
+    });
+
+    return config;
   },
 
   async headers() {
