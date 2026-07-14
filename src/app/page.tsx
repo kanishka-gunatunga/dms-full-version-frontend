@@ -14,6 +14,7 @@ import PieChartCard from "@/components/PieChartCard";
 import RemindersCalendar from "@/components/RemindersCalendar";
 import NearlyExpiredDocuments from "@/components/NearlyExpiredDocuments";
 import { getWithAuth } from "@/utils/apiClient";
+import Link from "next/link";
 import { useUserContext } from "@/context/userContext";
 import AssignedFiles from "@/components/AssignedFiles";
 import MySector from "@/components/MySector";
@@ -113,6 +114,7 @@ export default function Home() {
     const [categoryChartData, setCategoryChartData] = useState<ChartDataItem[]>([]);
     const [sectorChartData, setSectorChartData] = useState<ChartDataItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [pendingSignaturesCount, setPendingSignaturesCount] = useState<number>(0);
 
     const [nearlyExpiredDocs, setNearlyExpiredDocs] = useState<NearExpiryDocument[]>([]);
 
@@ -170,6 +172,23 @@ export default function Home() {
         };
         fetchRoleData();
     }, [userId]);
+
+    useEffect(() => {
+        const fetchPendingSignatures = async () => {
+            try {
+                const response = await getWithAuth("pending-signatures");
+                if (Array.isArray(response)) {
+                    setPendingSignaturesCount(response.length);
+                }
+            } catch (error) {
+                console.error("Failed to fetch pending signatures:", error);
+            }
+        };
+
+        if (isAuthenticated) {
+            fetchPendingSignatures();
+        }
+    }, [isAuthenticated]);
 
     console.log("---------is admin: ", isAdmin);
 
@@ -405,8 +424,19 @@ export default function Home() {
                     style={{ minHeight: "100vh", maxHeight: "100%", overflowY: "scroll", paddingBottom: "3rem" }}
                 >
                     <div
-                        className="d-flex flex-column rounded"
+                        className="d-flex flex-column rounded mb-3"
                     >
+                        {pendingSignaturesCount > 0 && (
+                            <div className="alert alert-warning d-flex flex-column flex-sm-row align-items-sm-center justify-content-between mb-4 border-warning" style={{ backgroundColor: "#fff3cd", color: "#856404" }}>
+                                <div>
+                                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>Action Required:</strong> You have {pendingSignaturesCount} document(s) assigned to you that require your signature.
+                                </div>
+                                <Link href="/signatures/sign-requests" className="btn btn-warning btn-sm fw-bold mt-2 mt-sm-0 text-nowrap">
+                                    Review and Sign
+                                </Link>
+                            </div>
+                        )}
                         {isAdmin === 1 && adminData && (
                             // <div className="d-flex flex-row align-items-center justify-content-between gap-1">
                             <div className="row g-3">

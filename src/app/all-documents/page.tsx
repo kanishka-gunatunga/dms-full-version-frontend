@@ -58,7 +58,7 @@ import {
   getWithAuth,
   postWithAuth,
 } from "@/utils/apiClient";
-import { handleDownload, handleView, handleViewOldDocument } from "@/utils/documentFunctions";
+import { handleDownload, handleView, handleViewOldDocument, handleDownloadSignHistory } from "@/utils/documentFunctions";
 import {
   fetchAndMapUserData,
   fetchCategoryData,
@@ -94,6 +94,7 @@ import { PiStarFourThin } from "react-icons/pi";
 import styles from "./all-documents.module.css";
 import { getFlattenedCategories } from "@/utils/commonFunctions";
 const RedactDocumentModal = dynamic(() => import("@/components/RedactDocumentModal"), { ssr: false });
+const ViewSignHistoryModal = dynamic(() => import("@/components/ViewSignHistoryModal"), { ssr: false });
 
 interface Category {
   category_name: string;
@@ -299,6 +300,7 @@ export default function AllDocTable() {
     removeIndexingModel: false,
     deleteFileModel: false,
     deleteBulkFileModel: false,
+    viewSignHistoryModel: false,
     allDocShareModel: false,
     viewModel: false,
     viewOldDocumentModel: false,
@@ -2596,6 +2598,34 @@ export default function AllDocTable() {
                             {hasPermission(
                               permissions,
                               "All Documents",
+                              "Download Document"
+                            ) && (
+                                <Dropdown.Item className="py-2">
+                                  <Link
+                                    href={"#"}
+                                    style={{ color: "#212529" }}
+                                    onClick={() =>
+                                      handleDownloadSignHistory(item.id)
+                                    }
+                                  >
+                                    <MdFileDownload className="me-2" />
+                                    Download Sign History
+                                  </Link>
+                                </Dropdown.Item>
+                              )}
+                            {hasPermission(
+                              permissions,
+                              "All Documents",
+                              "Download Document"
+                            ) && (
+                                <Dropdown.Item className="py-2" onClick={() => handleOpenModal("viewSignHistoryModel", item.id, item.name)}>
+                                  <IoEye className="me-2" />
+                                  View Sign History
+                                </Dropdown.Item>
+                              )}
+                            {hasPermission(
+                              permissions,
+                              "All Documents",
                               "Upload New Version file"
                             ) && (
                                 <Dropdown.Item
@@ -3122,6 +3152,34 @@ export default function AllDocTable() {
                                   <MdFileDownload className="me-2" />
                                   Download
                                 </Link>
+                              </Dropdown.Item>
+                            )}
+                          {hasPermission(
+                            permissions,
+                            "All Documents",
+                            "Download Document"
+                          ) && (
+                              <Dropdown.Item className="py-2">
+                                <Link
+                                  href={"#"}
+                                  style={{ color: "#212529" }}
+                                  onClick={() =>
+                                    handleDownloadSignHistory(item.id)
+                                  }
+                                >
+                                  <MdFileDownload className="me-2" />
+                                  Download Sign History
+                                </Link>
+                              </Dropdown.Item>
+                            )}
+                          {hasPermission(
+                            permissions,
+                            "All Documents",
+                            "Download Document"
+                          ) && (
+                              <Dropdown.Item className="py-2" onClick={() => handleOpenModal("viewSignHistoryModel", item.id, item.name)}>
+                                <IoEye className="me-2" />
+                                View Sign History
                               </Dropdown.Item>
                             )}
                           {hasPermission(
@@ -6953,6 +7011,15 @@ export default function AllDocTable() {
             </div>
           </Modal.Footer>
         </Modal>
+        {/* view sign history model */}
+        {modalStates.viewSignHistoryModel && (
+          <ViewSignHistoryModal
+            show={modalStates.viewSignHistoryModel}
+            handleClose={() => handleCloseModal("viewSignHistoryModel")}
+            documentId={selectedDocumentId}
+            documentName={selectedDocumentName}
+          />
+        )}
         {/* toast message */}
         <ToastMessage
           message={toastMessage}

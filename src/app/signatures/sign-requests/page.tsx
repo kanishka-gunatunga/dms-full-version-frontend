@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import Heading from "@/components/common/Heading";
-import { Table, Button } from "react-bootstrap";
+import { Table, Button, Modal, Form } from "react-bootstrap";
 import { FaSignature, FaRegFileAlt } from "react-icons/fa";
 import { useUserContext } from "@/context/userContext";
 import SignaturePlacementModal from "@/components/common/SignaturePlacementModal";
@@ -29,6 +29,8 @@ const SignRequestsPage = () => {
   const [loading, setLoading] = useState(true);
 
   const [showSignModal, setShowSignModal] = useState(false);
+  const [showMarkAsSignedModal, setShowMarkAsSignedModal] = useState(false);
+  const [isMarkedAsSigned, setIsMarkedAsSigned] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [userSignatureUrl, setUserSignatureUrl] = useState<string>("");
 
@@ -53,12 +55,7 @@ const SignRequestsPage = () => {
     try {
       const response = await getWithAuth("pending-signatures");
       if (Array.isArray(response)) {
-        const pdfDocuments = response.filter((doc: any) => 
-          doc.type === "pdf" || 
-          doc.type === "application/pdf" || 
-          (doc.name && doc.name.toLowerCase().endsWith(".pdf"))
-        );
-        setDocuments(pdfDocuments);
+        setDocuments(response);
       } else {
         console.warn("Pending signatures response is not an array:", response);
         setDocuments([]);
@@ -89,7 +86,13 @@ const SignRequestsPage = () => {
         }
 
         setSelectedDoc(response.data);
-        setShowSignModal(true);
+        const isPdf = doc.type === "pdf" || doc.type === "application/pdf" || (doc.name && doc.name.toLowerCase().endsWith(".pdf"));
+        if (isPdf) {
+          setShowSignModal(true);
+        } else {
+          setIsMarkedAsSigned(false);
+          setShowMarkAsSignedModal(true);
+        }
       } else {
         throw new Error("Failed to load document details");
       }
@@ -117,6 +120,48 @@ const SignRequestsPage = () => {
         setShowSignModal(false);
         setToastType("success");
         setToastMessage("Document signed and updated successfully!");
+        setShowToast(true);
+        loadSignRequests();
+      } else {
+        const errorMsg = response?.message || response?.error || "Failed to save the signed document!";
+        setToastType("error");
+        setToastMessage(errorMsg);
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error("Error saving signed document:", error);
+      setToastType("error");
+      setToastMessage("An error occurred while saving the signed document!");
+      setShowToast(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSaveMarkAsSigned = async () => {
+    if (!isMarkedAsSigned) {
+      setToastType("error");
+      setToastMessage("Please check the box to mark as signed.");
+      setShowToast(true);
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append("user", userId || "");
+      formData.append("signatures", JSON.stringify([]));
+      formData.append("is_marked_as_signed", "true");
+
+      const response = await postWithAuth(
+        `sign-document/${selectedDoc?.id}`,
+        formData
+      );
+
+      if (response && (response.status === "success" || response.message === "success" || response.status === 200)) {
+        setShowMarkAsSignedModal(false);
+        setToastType("success");
+        setToastMessage("Document marked as signed successfully!");
         setShowToast(true);
         loadSignRequests();
       } else {
@@ -214,6 +259,32 @@ const SignRequestsPage = () => {
             setShowToast(true);
           }}
         />
+      )}
+
+      {showMarkAsSignedModal && selectedDoc && (
+        <Modal show={showMarkAsSignedModal} onHide={() => setShowMarkAsSignedModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Mark Document as Signed</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>You are about to sign the document: <strong>{selectedDoc.name}</strong></p>
+            <Form.Check 
+              type="checkbox"
+              id="markAsSignedCheck"
+              label="I have reviewed this document and mark it as signed."
+              checked={isMarkedAsSigned}
+              onChange={(e) => setIsMarkedAsSigned(e.target.checked)}
+            />
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowMarkAsSignedModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSaveMarkAsSigned} disabled={!isMarkedAsSigned}>
+              Save
+            </Button>
+          </Modal.Footer>
+        </Modal>
       )}
 
       {isProcessing && (
