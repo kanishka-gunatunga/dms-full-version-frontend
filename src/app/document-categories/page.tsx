@@ -139,6 +139,7 @@ export default function AllDocTable() {
   const [roleDropDownData, setRoleDropDownData] = useState<RoleDropdownItem[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
+  const [signingLevels, setSigningLevels] = useState<{ level: number; users: string[] }[]>([]);
 
   const [modalStates, setModalStates] = useState({
     addCategory: false,
@@ -177,6 +178,7 @@ export default function AllDocTable() {
     setUsers([]);
     setSelectedRoleIds([]);
     setRoles([]);
+    setSigningLevels([]);
   };
 
   const handleRoleSelect = (roleId: string) => {
@@ -353,8 +355,7 @@ export default function AllDocTable() {
     formData.append("category_name", category_name || "");
     formData.append("description", description);
     formData.append("attribute_data", JSON.stringify(attributeData));
-    formData.append("signing_roles", JSON.stringify(selectedRoleIds));
-    formData.append("signing_users", JSON.stringify(selectedUserIds));
+    
 
     try {
 
@@ -429,8 +430,7 @@ export default function AllDocTable() {
       formData.append("category_name", category_name || "");
       formData.append("description", description);
       formData.append("attribute_data", JSON.stringify(attributeData));
-      formData.append("signing_roles", JSON.stringify(selectedRoleIds));
-      formData.append("signing_users", JSON.stringify(selectedUserIds));
+      
 
       // formData.forEach((value, key) => {
       //   console.log(`${key}: ${value}`);
@@ -522,38 +522,26 @@ export default function AllDocTable() {
             setUserDropDownData([]);
         }
 
-        if (response.signing_roles) {
-          try {
-            const roleIds = typeof response.signing_roles === "string"
-              ? JSON.parse(response.signing_roles)
-              : response.signing_roles;
-            if (Array.isArray(roleIds)) {
-              setSelectedRoleIds(roleIds);
-              const mappedRoles = roleIds.map((id: any) =>
-                roleDropDownData.find((r) => r.id.toString() === id.toString())?.role_name
-              ).filter(Boolean) as string[];
-              setRoles(mappedRoles);
-            }
-          } catch (e) {
-            console.error("Failed to parse signing_roles:", e);
-          }
-        }
-
         if (response.signing_users) {
           try {
-            const userIds = typeof response.signing_users === "string"
+            const parsedLevels = typeof response.signing_users === "string"
               ? JSON.parse(response.signing_users)
               : response.signing_users;
-            if (Array.isArray(userIds)) {
-              setSelectedUserIds(userIds);
-              const mappedUsers = userIds.map((id: any) =>
-                userDropDownData.find((u) => u.id.toString() === id.toString())?.user_name
-              ).filter(Boolean) as string[];
-              setUsers(mappedUsers);
+            if (Array.isArray(parsedLevels)) {
+              if (parsedLevels.length > 0 && typeof parsedLevels[0] === 'object') {
+                  setSigningLevels(parsedLevels);
+              } else {
+                  setSigningLevels([{ level: 1, users: parsedLevels }]);
+              }
+            } else {
+              setSigningLevels([]);
             }
           } catch (e) {
             console.error("Failed to parse signing_users:", e);
+            setSigningLevels([]);
           }
+        } else {
+            setSigningLevels([]);
         }
 
         console.log("category data::: ", response);
@@ -574,23 +562,24 @@ export default function AllDocTable() {
   };
 
   const handleEditCategory = async () => {
-
     try {
       const formData = new FormData();
       formData.append("parent_category", editData.parent_category || "");
       formData.append("category_name", editData.category_name || "");
       formData.append("description", editData.description);
       formData.append("attribute_data", JSON.stringify(attributeData));
-      formData.append("signing_roles", JSON.stringify(selectedRoleIds));
-      formData.append("signing_users", JSON.stringify(selectedUserIds));
+      
+      if (signingLevels && signingLevels.length > 0) {
+        formData.append("signing_users", JSON.stringify(signingLevels));
+      } else {
+        formData.append("signing_users", "[]");
+      }
 
-      formData.forEach((value, key) => {
-        console.log(`${key}: ${value}`);
-      });
       const response = await postWithAuth(
         `category-details/${selectedItemId}`,
         formData
       );
+      
       if (response.status === "success") {
         handleCloseModal("editModel");
         setattributeData([]);
@@ -1020,7 +1009,6 @@ export default function AllDocTable() {
                 </div>
               </div>
             </div>
-            {renderSigningAssignmentFields("add")}
             {
               excelGenerated && (
                 <div className={`col-12 col-lg-12 d-flex flex-column ps-lg-2 pe-2 ${styles.formGroup}`}>
@@ -1210,7 +1198,6 @@ export default function AllDocTable() {
                 </div>
               </div>
             </div>
-            {renderSigningAssignmentFields("child")}
             {
               excelGenerated && (
                 <div className={`col-12 col-lg-12 d-flex flex-column ps-lg-2 pe-2 ${styles.formGroup}`}>
@@ -1409,43 +1396,78 @@ export default function AllDocTable() {
                 </div>
               </div>
             </div>
-            {renderSigningAssignmentFields("edit")}
             {
               editData.sectors && editData.sectors.length > 0 ? (
                 <div className={`col-12 col-lg-12 d-flex flex-column pe-2 ${styles.formGroup}`}>
-                  <label className={styles.formLabel}>Assign Users</label>
-                  <div className="d-flex flex-column position-relative">
-                    <DropdownButton
-                      id={`dropdown-users-button-edit`}
-                      title={users.length > 0 ? users.join(", ") : "Select Users"}
-                      className={`custom-dropdown-text-start text-start w-100 ${styles.dropdownToggle}`}
-                      onSelect={(value) => {
-                        if (value) handleUserSelect(value);
-                      }}
+                  <label className={styles.formLabel}>
+                    Signing Levels 
+                    <button 
+                      type="button"
+                      className="btn btn-sm btn-success ms-2"
+                      onClick={() => setSigningLevels([...signingLevels, { level: signingLevels.length + 1, users: [] }])}
                     >
-                      {userDropDownData.length > 0 ? (
-                        userDropDownData.map((user) => (
-                          <Dropdown.Item key={user.id} eventKey={user.id.toString()}>
-                            {user.user_name}
-                          </Dropdown.Item>
-                        ))
-                      ) : (
-                        <Dropdown.Item disabled>No users available for these sectors</Dropdown.Item>
-                      )}
-                    </DropdownButton>
-                    <div className="mt-1">
-                      {users.map((user, index) => (
-                        <span key={index} className={styles.badge}>
-                          {user}
-                          <IoClose className={styles.badgeClose} onClick={() => handleUserRole(user)} />
-                        </span>
-                      ))}
+                      <FaPlus /> Add Level
+                    </button>
+                  </label>
+                  {signingLevels.map((levelObj, levelIndex) => (
+                    <div key={levelIndex} className="d-flex flex-column position-relative mt-2 p-2 border rounded">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Level {levelObj.level}</strong>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => {
+                            const newLevels = signingLevels.filter((_, i) => i !== levelIndex);
+                            newLevels.forEach((l, i) => l.level = i + 1);
+                            setSigningLevels(newLevels);
+                          }}
+                        >
+                          <IoTrashOutline />
+                        </button>
+                      </div>
+                      <DropdownButton
+                        id={`dropdown-level-${levelObj.level}-users`}
+                        title="Select Users"
+                        className={`custom-dropdown-text-start text-start w-100 ${styles.dropdownToggle}`}
+                        onSelect={(value) => {
+                          if (value && !levelObj.users.includes(value)) {
+                            const newLevels = [...signingLevels];
+                            newLevels[levelIndex].users.push(value);
+                            setSigningLevels(newLevels);
+                          }
+                        }}
+                      >
+                        {userDropDownData.length > 0 ? (
+                          userDropDownData.map((user) => (
+                            <Dropdown.Item key={user.id} eventKey={user.id.toString()}>
+                              {user.user_name}
+                            </Dropdown.Item>
+                          ))
+                        ) : (
+                          <Dropdown.Item disabled>No users available for these sectors</Dropdown.Item>
+                        )}
+                      </DropdownButton>
+                      <div className="mt-1">
+                        {levelObj.users.map((userId, userIndex) => {
+                          const user = userDropDownData.find(u => u.id.toString() === userId.toString());
+                          const userName = user ? user.user_name : userId;
+                          return (
+                            <span key={userIndex} className={styles.badge}>
+                              {userName}
+                              <IoClose className={styles.badgeClose} onClick={() => {
+                                const newLevels = [...signingLevels];
+                                newLevels[levelIndex].users = newLevels[levelIndex].users.filter(id => id !== userId);
+                                setSigningLevels(newLevels);
+                              }} />
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className={`col-12 col-lg-12 d-flex flex-column pe-2 ${styles.formGroup}`}>
-                  <label className={styles.formLabel}>Assign Users</label>
+                  <label className={styles.formLabel}>Signing Levels</label>
                   <div className="d-flex flex-column position-relative mt-2">
                     <Paragraph text="First assign the category to a sector to assign users" color="#dc3545" />
                   </div>

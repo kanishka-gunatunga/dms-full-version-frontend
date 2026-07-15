@@ -17,6 +17,7 @@ interface SignStatusData {
   status: string;
   sign_option: string;
   date: string | null;
+  level?: number;
 }
 
 const ViewSignHistoryModal: React.FC<ViewSignHistoryModalProps> = ({
@@ -72,6 +73,7 @@ const ViewSignHistoryModal: React.FC<ViewSignHistoryModalProps> = ({
               <thead className="sticky-header bg-light">
                 <tr>
                   <th>User Name</th>
+                  <th>Level</th>
                   <th>Status</th>
                   <th>Sign Option</th>
                   <th>Date & Time</th>
@@ -82,6 +84,7 @@ const ViewSignHistoryModal: React.FC<ViewSignHistoryModalProps> = ({
                   data.map((item, index) => (
                     <tr key={index}>
                       <td>{item.name}</td>
+                      <td>{item.level || "-"}</td>
                       <td>
                         <span
                           className={`badge ${
@@ -99,7 +102,7 @@ const ViewSignHistoryModal: React.FC<ViewSignHistoryModalProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="text-center text-muted py-3">
+                    <td colSpan={5} className="text-center text-muted py-3">
                       No assigned users found.
                     </td>
                   </tr>
