@@ -68,6 +68,7 @@ export default function AllDocTable() {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [userStartDate, setUserStartDate] = useState<string>("");
   const [userExpireDate, setUserExpireDate] = useState<string>("");
+  const [forceArchive, setForceArchive] = useState<boolean>(false);
   const [userEndDate, setUserEndDate] = useState<string>("");
   const [userDownloadable, setUserDownloadable] = useState<boolean>(false);
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
@@ -280,6 +281,7 @@ export default function AllDocTable() {
     userEndDate: formatDateForSQL(userEndDate),
     userDownloadable: userDownloadable ? "1" : "0",
     expireDate: formatDateForSQL(userExpireDate),
+    forceArchive: forceArchive ? "1" : "0",
   };
 
   // console.log("Collected Data:", collectedData);
@@ -364,6 +366,7 @@ export default function AllDocTable() {
     // formData.append("encryption_type", encriptionType);
     formData.append("attribute_data", JSON.stringify(formAttributeData));
     formData.append("expiration_date", collectedData.expireDate || "");
+    formData.append("force_archive", collectedData.forceArchive);
 
     // for (const [key, value] of formData.entries()) {
     //   console.log(`${key}: ${value}`);
@@ -885,16 +888,28 @@ export default function AllDocTable() {
               <div className={styles.formRowTwoCol}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Select Expire Date</label>
-                  <div className={styles.datePickerWrapper}>
-                    <DatePicker
-                      showTime
-                      className={`w-100`}
-                      placeholder="Choose Expire Date"
-                      onChange={(value, dateString) => {
-                        setUserEndDate(`${dateString}`)
-                      }}
-                      onOk={(value) => onExpireDateTimeOk(value, value?.format('YYYY-MM-DD HH:mm:ss') ?? '')}
-                    />
+                  <div className="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                    <div className={styles.datePickerWrapper} style={{ flex: 1 }}>
+                      <DatePicker
+                        showTime
+                        className={`w-100`}
+                        placeholder="Choose Expire Date"
+                        onChange={(value, dateString) => {
+                          setUserExpireDate(`${dateString}`)
+                        }}
+                        onOk={(value) => onExpireDateTimeOk(value, value?.format('YYYY-MM-DD HH:mm:ss') ?? '')}
+                      />
+                    </div>
+                    <label className={styles.checkboxLabel} style={{ marginTop: 0 }}>
+                      <Checkbox
+                        checked={forceArchive}
+                        onChange={() => setForceArchive(!forceArchive)}
+                      >
+                        <span className={styles.checkboxLabelText}>
+                          Force Archive
+                        </span>
+                      </Checkbox>
+                    </label>
                   </div>
                 </div>
               </div>
