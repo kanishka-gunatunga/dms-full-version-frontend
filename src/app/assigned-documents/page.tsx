@@ -2299,17 +2299,25 @@ export default function AllDocTable() {
                               </Dropdown.Item>
                             )}
 
-                            
-                            {item.type === "pdf" && hasPermission(permissions, "Assigned Documents", "Redact Document") && (
-                              <Dropdown.Item
-                                onClick={() =>
-                                  handleOpenModal("redactDocumentModel", item.id, item.name)
-                                }
-                                className="py-2"
-                              >
-                                <MdModeEditOutline className="me-2" />
-                                Redact Document
-                              </Dropdown.Item>
+                          {item.type === "pdf" &&
+                              hasPermission(permissions, "Assigned Documents", "Redact Document") && (
+                                <Dropdown.Item
+                                  onClick={() => {
+                                    if (item?.is_redacted === 1) {
+                                      setToastMessage(
+                                        "You cannot redact this document again because it has already been redacted. To redact this document again, the user who redacted it must first undo the redaction."
+                                      );
+                                      setToastType("error");
+                                      setShowToast(true);
+                                    } else {
+                                      handleOpenModal("redactDocumentModel", item.id, item.name);
+                                    }
+                                  }}
+                                  className="py-2"
+                                >
+                                  <MdModeEditOutline className="me-2" />
+                                  Redact Document
+                                </Dropdown.Item>
                             )}
 {hasPermission(permissions, "Assigned Documents", "Edit Document") && (
                               <Dropdown.Item
