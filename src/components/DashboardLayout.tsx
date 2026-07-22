@@ -276,6 +276,11 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
                     url: "/company-profile",
                     permission: { group: "Settings", action: "Manage Company Profile" },
                 },
+                 {
+                name: "System Backups",
+                url: "/system-backup",
+                icon: <IoDocumentOutline />,
+                }
                 // {
                 //   name: "Languages",
                 //   url: "/languages",

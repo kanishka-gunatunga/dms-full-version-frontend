@@ -106,6 +106,11 @@ const DashboardLayoutSuperAdmin: React.FC<{ children: React.ReactNode }> = ({
           url: "/ai-settings",
           icon: <GiBrain />,
           // permission: { group: "FTP Accounts", action: "View FTP Accounts" },
+        },
+        {
+          name: "System Backups",
+          url: "/system-backup",
+          icon: <IoDocumentOutline />,
         }
       ],
     },
