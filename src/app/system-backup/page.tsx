@@ -39,6 +39,10 @@ export default function SystemBackupPage() {
   const [backups, setBackups] = useState<SystemBackup[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restoreId, setRestoreId] = useState<number | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const [destination, setDestination] = useState("local");
   const [ftpConfig, setFtpConfig] = useState({ host: "", port: "21", username: "", password: "", path: "" });
@@ -84,6 +88,33 @@ export default function SystemBackupPage() {
       setShowToast(true);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!restoreId) return;
+    setIsRestoring(true);
+    try {
+      const response = await postWithAuth(`system-backups/restore/${restoreId}`, {});
+      if (response.message) {
+        setToastType("success");
+        setToastMessage("System restored successfully! Reloading in 2 seconds...");
+        setShowToast(true);
+        setIsRestoreModalOpen(false);
+        fetchBackups();
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setToastType("error");
+        setToastMessage(response.error || "Failed to restore backup!");
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error("Error restoring backup:", error);
+      setToastType("error");
+      setToastMessage("Error restoring backup");
+      setShowToast(true);
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -164,10 +195,17 @@ export default function SystemBackupPage() {
                       </td>
                       <td>{item.file_size ? (item.file_size / 1024 / 1024).toFixed(2) + ' MB' : '-'}</td>
                       <td>
-                        {item.status === 'completed' && item.destination === 'local' && !item.is_auto && (
-                          <button onClick={() => handleDownload(item.id)} className="btn btn-sm btn-outline-primary">
-                            <BsDownload /> Download
-                          </button>
+                        {item.status === 'completed' && (
+                          <div className="d-flex align-items-center">
+                            {item.destination === 'local' && !item.is_auto && (
+                              <button onClick={() => handleDownload(item.id)} className="btn btn-sm btn-outline-primary me-2">
+                                <BsDownload /> Download
+                              </button>
+                            )}
+                            <button onClick={() => { setRestoreId(item.id); setIsRestoreModalOpen(true); }} className="btn btn-sm btn-outline-warning text-dark border-warning">
+                              Restore
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -229,6 +267,36 @@ export default function SystemBackupPage() {
             </button>
             <button onClick={() => setIsModalOpen(false)} className="custom-icon-button button-danger text-white bg-danger px-3 py-1 rounded">
               <MdCancel fontSize={16} className="me-1" /> Cancel
+            </button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal centered show={isRestoreModalOpen} onHide={() => !isRestoring && setIsRestoreModalOpen(false)}>
+        <Modal.Header>
+          <div className="d-flex w-100 justify-content-end">
+            <div className="col-11 d-flex flex-row">
+              <p className="mb-0 text-danger fw-bold" style={{ fontSize: "16px" }}>⚠️ Restore Backup</p>
+            </div>
+            <div className="col-1 d-flex justify-content-end">
+              <IoClose fontSize={20} style={{ cursor: isRestoring ? "not-allowed" : "pointer" }} onClick={() => !isRestoring && setIsRestoreModalOpen(false)} />
+            </div>
+          </div>
+        </Modal.Header>
+        <Modal.Body className="py-3">
+          <div className="alert alert-danger mb-0">
+            <strong>Warning:</strong> Restoring a backup will completely overwrite your current database and files with the data from this backup. Any changes made or data created after this backup will be permanently lost!
+            <br /><br />
+            Are you absolutely sure you want to proceed?
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <div className="d-flex flex-row">
+            <button onClick={handleRestore} disabled={isRestoring} className="custom-icon-button button-danger text-white bg-danger px-3 py-1 rounded me-2">
+              {isRestoring ? "Restoring..." : "Yes, Restore System"}
+            </button>
+            <button onClick={() => setIsRestoreModalOpen(false)} disabled={isRestoring} className="custom-icon-button bg-secondary text-white px-3 py-1 rounded">
+              Cancel
             </button>
           </div>
         </Modal.Footer>
